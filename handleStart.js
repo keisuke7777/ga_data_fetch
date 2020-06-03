@@ -1,6 +1,16 @@
 {
+  function sleep(time) {
+    var d1 = new Date().getTime();
+    var d2 = new Date().getTime();
+    while (d2 < d1 + time) {
+      d2 = new Date().getTime();
+    }
+    return;
+  }
+
   function getPage(userId, i) {
     if (userList.length < i) return;
+    sleep(2000);
     window.location.href = `https://analytics.google.com/analytics/web/?authuser=5#/report/visitors-user-activity/a62914155w99339460p103300385/_r.userId=${userId}&_r.userListReportStates=%3Fexplorer-table-dataTable.sortColumnName=analytics.visits%2526explorer-table-dataTable.sortDescending=true%2526explorer-table.plotKeys=%5B%5D&_r.userListReportId=visitors-legacy-user-id`;
     const elem = document.getElementById("galaxyIframe");
 
@@ -11,17 +21,22 @@
         ),
       ].map((e) => e.children[0].innerHTML);
       if (baseInfo.length > 0) {
-        clearInterval(id);
-        const res = parseUserInfo(baseInfo, userId);
-        const SessionPerDate = getSessionPerDate(elem);
-        res.history = getDetail(SessionPerDate);
-        chrome.runtime.sendMessage({
-          method: "setItem",
-          key: "res",
-          value: JSON.stringify(res),
-        });
-
-        aFunc2(userList[i], i + 1);
+        const customerId = [
+          ...elem.contentWindow.document.getElementsByClassName("_GAZeb"),
+        ].map((e) => e.innerHTML);
+        if (customerId[0] === userId) {
+          clearInterval(id);
+          const res = parseUserInfo(baseInfo, userId);
+          const SessionPerDate = getSessionPerDate(elem);
+          res.history = getDetail(SessionPerDate);
+          chrome.runtime.sendMessage({
+            method: "setItem",
+            key: "res",
+            value: JSON.stringify(res),
+          });
+          console.log(res);
+          getPage(userList[i], i + 1);
+        }
       }
     }, 2000);
   }
