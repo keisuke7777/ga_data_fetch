@@ -21,19 +21,19 @@
   });
 
   document.getElementById("start").addEventListener("click", function () {
-    chrome.storage.sync.get({ userList: "hoge" }, (item) => {
-      console.log(item);
+    chrome.storage.sync.get({ userList: [] }, (item) => {
+      let userList = JSON.parse(item.userList);
+
+      chrome.tabs.executeScript(
+        {
+          code: "let userList =" + JSON.stringify(userList),
+        },
+        () => {
+          chrome.tabs.executeScript({
+            file: "handleStart.js",
+          });
+        }
+      );
     });
-    // chrome.tabs.executeScript(
-    //   {
-    //     file: "getUserList.js",
-    //   },
-    //   (res) => {
-    //     const userList = res[0];
-    //     document.getElementById("all_data").innerHTML = userList.length;
-    //     chrome.storage.sync.set({ userList: userList }, () => {});
-    //     localStorage["data"] = kore;
-    //   }
-    // );
   });
 }

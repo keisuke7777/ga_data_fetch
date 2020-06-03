@@ -9,6 +9,9 @@
     },
     "default_popup": "popup.html"
   },
+  "background": {
+    "scripts": ["background.js"]
+  },
 
   "permissions": ["activeTab", "background", "storage", "unlimitedStorage"]
 }
