@@ -27,7 +27,7 @@
         if (customerId[0] === userId) {
           clearInterval(id);
           const res = parseUserInfo(baseInfo, userId);
-          const SessionPerDate = getSessionPerDate(elem);
+          const SessionPerDate = getSessionPerDay(elem);
           res.history = getDetail(SessionPerDate);
           chrome.runtime.sendMessage({
             method: "setItem",
@@ -56,7 +56,7 @@
   };
 
   // スクレイピング
-  const getSessionPerDate = (elem) => {
+  const getSessionPerDay = (elem) => {
     // 日別のセッションを取得する。
     const SessionPerDate = [
       ...elem.contentWindow.document.getElementsByClassName("_GAvi"),
