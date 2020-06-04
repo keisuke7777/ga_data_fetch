@@ -8,17 +8,20 @@
     return;
   }
 
-  let sessions = localStorage.getItem("sessions");
-  console.log("sessions", sessions);
-  if (!sessions || sessions.length == 0) {
-    sessions = [];
-  }
-  console.log("sessions", sessions);
-
   function getPage(userId, i) {
     console.log(i);
     if (userList.length < i) {
+      // 処理終了
       console.log("end");
+
+      try {
+        lastUser = sessions.slice(-1)[0]["clientId"];
+      } catch (e) {
+        console.log("保存済みです");
+        return;
+      }
+      localStorage.setItem("lastUser", lastUser);
+      // console.log("lastUser", lastUser);
       const link = document.createElement("a");
       link.href =
         "data:text/plain," + encodeURIComponent(JSON.stringify(sessions));
@@ -42,18 +45,43 @@
         ].map((e) => e.innerHTML);
         if (customerId[0] === userId) {
           clearInterval(id);
-          const res = parseUserInfo(baseInfo, userId);
+          const sessionInfo = getSessionInfo(elem);
+          console.log("sessionInfo", sessionInfo);
+          const res = parseUserInfo(baseInfo, sessionInfo, userId);
           const SessionPerDate = getSessionPerDay(elem);
+
           res.history = getDetail(SessionPerDate);
           sessions.push(res);
-          localStorage.setItem("sessions", JSON.stringify(sessions));
+          console.log(res);
+
+          // ローカルストレージに保存
+          // 失敗したら処理を中断し、途中経過をダウンロードする。
+          try {
+            localStorage.setItem("sessions", JSON.stringify(sessions));
+          } catch (e) {
+            console.error(
+              "localStorageが一杯になりました。もう一度スタートしてください。途中から始まります。"
+            );
+            const link = document.createElement("a");
+            link.href =
+              "data:text/plain," + encodeURIComponent(JSON.stringify(sessions));
+            link.download = "sessions.json";
+            link.click();
+            localStorage.setItem("lastUser", userId);
+            localStorage.removeItem("sessions");
+            localStorage.setItem(
+              "sessions",
+              JSON.stringify(sessions.slice(-1))
+            );
+            return;
+          }
           getPage(userList[i], i + 1);
         }
       }
     }, 2000);
   }
 
-  const parseUserInfo = (baseInfo, userId) => {
+  const parseUserInfo = (baseInfo, sessionInfo, userId) => {
     const res = {};
     res.clientId = userId;
     res.BigQueryClientId = baseInfo[0];
@@ -63,7 +91,18 @@
     res.firstVisit = baseInfo[4];
     res.channel = baseInfo[5];
     res.ref = baseInfo[6];
+    res.ltv = sessionInfo[0];
+    res.sessionTime = sessionInfo[1];
+    res.revenue = sessionInfo[2];
+    res.transaction = sessionInfo[3];
     return res;
+  };
+
+  const getSessionInfo = (elem) => {
+    const info = [
+      ...elem.contentWindow.document.getElementsByClassName("_GAFI"),
+    ].map((e) => e.innerHTML);
+    return info;
   };
 
   // スクレイピング
@@ -101,10 +140,36 @@
     return detail;
   };
 
+  // 初期化 --------------
+  // 途中から開始する場合は "isInitial = false" に設定する。
+  let isInitial = true;
+  let sessions = localStorage.getItem("sessions");
+  let lastUser = localStorage.getItem("lastUser");
+  // console.log("sessions", sessions);
+  // console.log("userList", userList);
+  if (isInitial) {
+    // 最初から始める。
+    console.log("initial");
+    sessions = [];
+    localStorage.removeItem("lastUser");
+  } else if (lastUser) {
+    // ラストユーザーの後から始める。
+    console.log("continue");
+    sessions = [];
+    const idx = userList.indexOf(lastUser);
+    userList = userList.slice(idx + 1);
+  } else {
+    sessions = JSON.parse(sessions);
+    console.log("through");
+  }
+  // console.log("lastUser", lastUser);
+  console.log("userList", userList);
+  // 実行部 --------------
   if (sessions.length > 0) {
     const start = sessions.length - 1;
     getPage(userList[start], start + 1);
   } else {
+    userList = userList.slice(0, 2);
     getPage(userList[0], 1);
   }
 }
