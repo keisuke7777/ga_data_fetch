@@ -161,13 +161,16 @@
     console.log("through");
   }
   // console.log("lastUser", lastUser);
-  console.log("userList", userList);
+  // console.log("userList", userList);
+
   // 実行部 --------------
   if (sessions.length > 0) {
+    // 保存途中のセッションから始める。
     const start = sessions.length - 1;
     getPage(userList[start], start + 1);
   } else {
-    userList = userList.slice(0, 2);
+    // 最初から始める。
+    // userList = userList.slice(0, 2);
     getPage(userList[0], 1);
   }
 }
