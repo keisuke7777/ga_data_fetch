@@ -8,8 +8,24 @@
     return;
   }
 
+  let sessions = localStorage.getItem("sessions");
+  console.log("sessions", sessions);
+  if (!sessions || sessions.length == 0) {
+    sessions = [];
+  }
+  console.log("sessions", sessions);
+
   function getPage(userId, i) {
-    if (userList.length < i) return;
+    console.log(i);
+    if (userList.length < i) {
+      console.log("end");
+      const link = document.createElement("a");
+      link.href =
+        "data:text/plain," + encodeURIComponent(JSON.stringify(sessions));
+      link.download = "sessions.json";
+      link.click();
+      return;
+    }
     sleep(2000);
     window.location.href = `https://analytics.google.com/analytics/web/?authuser=5#/report/visitors-user-activity/a62914155w99339460p103300385/_r.userId=${userId}&_r.userListReportStates=%3Fexplorer-table-dataTable.sortColumnName=analytics.visits%2526explorer-table-dataTable.sortDescending=true%2526explorer-table.plotKeys=%5B%5D&_r.userListReportId=visitors-legacy-user-id`;
     const elem = document.getElementById("galaxyIframe");
@@ -29,18 +45,13 @@
           const res = parseUserInfo(baseInfo, userId);
           const SessionPerDate = getSessionPerDay(elem);
           res.history = getDetail(SessionPerDate);
-          chrome.runtime.sendMessage({
-            method: "setItem",
-            key: "res",
-            value: JSON.stringify(res),
-          });
-          console.log(res);
+          sessions.push(res);
+          localStorage.setItem("sessions", JSON.stringify(sessions));
           getPage(userList[i], i + 1);
         }
       }
     }, 2000);
   }
-  getPage(userList[0], 1);
 
   const parseUserInfo = (baseInfo, userId) => {
     const res = {};
@@ -89,4 +100,11 @@
     });
     return detail;
   };
+
+  if (sessions.length > 0) {
+    const start = sessions.length - 1;
+    getPage(userList[start], start + 1);
+  } else {
+    getPage(userList[0], 1);
+  }
 }

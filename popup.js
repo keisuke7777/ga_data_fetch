@@ -1,6 +1,7 @@
 {
   ("use strict");
 
+  console.log("即時関数");
   chrome.storage.sync.get({ userList: 0 }, (item) => {
     document.getElementById("all_data").innerHTML = JSON.parse(
       item.userList
@@ -34,6 +35,20 @@
           });
         }
       );
+    });
+  });
+
+  document.getElementById("save").addEventListener("click", function () {
+    chrome.storage.sync.get({ sessions: JSON.stringify([]) }, (item) => {
+      console.log(item);
+      const link = document.createElement("a");
+      // リンク先にJSON形式の文字列データを置いておく。
+      link.href =
+        "data:text/plain," + encodeURIComponent(JSON.parse(item.sessions));
+      // 保存するJSONファイルの名前をリンクに設定する。
+      link.download = "hoge.json";
+      // ファイルを保存する。
+      link.click();
     });
   });
 }
