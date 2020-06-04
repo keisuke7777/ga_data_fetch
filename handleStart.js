@@ -30,7 +30,8 @@
       return;
     }
     sleep(2000);
-    window.location.href = `https://analytics.google.com/analytics/web/?authuser=5#/report/visitors-user-activity/a62914155w99339460p103300385/_r.userId=${userId}&_r.userListReportStates=%3Fexplorer-table-dataTable.sortColumnName=analytics.visits%2526explorer-table-dataTable.sortDescending=true%2526explorer-table.plotKeys=%5B%5D&_r.userListReportId=visitors-legacy-user-id`;
+    const rowStart = 0;
+    window.location.href = `https://analytics.google.com/analytics/web/?authuser=5#/report/visitors-user-activity/a62914155w99339460p103300385/_u.date00=20191203&_u.date01=20200603&_r.userId=${userId}&_r.userListReportStates=%3F_u.date00=20191203%2526_u.date01=20200603&_r.userListReportId=visitors-legacy-user-id&activity-userActivityTable.activityTypeFilter=PAGEVIEW,GOAL,ECOMMERCE,EVENT&activity-userActivityTable.sorting=descending&activity-userActivityTable.rowShow=500&activity-userActivityTable.rowStart=${rowStart}/`;
     const elem = document.getElementById("galaxyIframe");
 
     let id = setInterval(() => {
@@ -139,7 +140,7 @@
     return detail;
   };
 
-  // 初期化 --------------
+  // 初期化 -------------------------------------------------
   // 途中から開始する場合は "isInitial = false" に設定する。
   let isInitial = true;
   let sessions = localStorage.getItem("sessions");
@@ -164,14 +165,14 @@
   // console.log("lastUser", lastUser);
   // console.log("userList", userList);
 
-  // 実行部 --------------
+  // 実行部 -------------------------------------------------
   if (sessions.length > 0) {
     // 保存途中のセッションから始める。
     const start = sessions.length - 1;
     getPage(userList[start], start + 1);
   } else {
     // 最初から始める。
-    // userList = userList.slice(0, 2);
+    userList = userList.slice(0, 1);
     getPage(userList[0], 1);
   }
 }
