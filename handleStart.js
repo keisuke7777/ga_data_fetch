@@ -46,13 +46,11 @@
         if (customerId[0] === userId) {
           clearInterval(id);
           const sessionInfo = getSessionInfo(elem);
-          console.log("sessionInfo", sessionInfo);
           const res = parseUserInfo(baseInfo, sessionInfo, userId);
           const SessionPerDate = getSessionPerDay(elem);
 
           res.history = getDetail(SessionPerDate);
           sessions.push(res);
-          console.log(res);
 
           // ローカルストレージに保存
           // 失敗したら処理を中断し、途中経過をダウンロードする。
