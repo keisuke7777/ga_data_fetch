@@ -39,6 +39,7 @@
           "C_USER_ACTIVITY_PROFILE_SCORECARD_CONTENT_TEXT"
         ),
       ].map((e) => e.children[0].innerHTML);
+
       if (baseInfo.length > 0) {
         const customerId = [
           ...elem.contentWindow.document.getElementsByClassName("_GAZeb"),

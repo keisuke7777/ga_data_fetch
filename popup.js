@@ -1,7 +1,6 @@
 {
   ("use strict");
 
-  console.log("即時関数");
   chrome.storage.sync.get({ userList: 0 }, (item) => {
     document.getElementById("all_data").innerHTML = JSON.parse(
       item.userList
@@ -34,6 +33,12 @@
           });
         }
       );
+    });
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    chrome.storage.sync.set({ userList: JSON.stringify([]) }, () => {
+      document.getElementById("all_data").innerHTML = 0;
     });
   });
 }
