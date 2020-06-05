@@ -8,14 +8,16 @@
     return;
   }
 
-  function getPage(userId, i) {
-    console.log(i);
+  function getPage(userId, i, page = 1, preDates = new Set()) {
+    console.log("---");
+    console.log("userNum: ", i);
+    console.log("page: ", page);
     if (userList.length < i) {
-      // 処理終了
+      // 処理終了 ----------------
       console.log("end");
 
       try {
-        lastUser = sessions.slice(-1)[0]["clientId"];
+        lastUser = reports.slice(-1)[0]["clientId"];
       } catch (e) {
         console.log("保存済みです");
         return;
@@ -24,13 +26,14 @@
       // console.log("lastUser", lastUser);
       const link = document.createElement("a");
       link.href =
-        "data:text/plain," + encodeURIComponent(JSON.stringify(sessions));
-      link.download = "sessions.json";
+        "data:text/plain," + encodeURIComponent(JSON.stringify(reports));
+      link.download = "reports.json";
       link.click();
       return;
     }
     sleep(2000);
-    const rowStart = 0;
+    // ページ遷移  --------------
+    const rowStart = 500 * (page - 1);
     window.location.href = `https://analytics.google.com/analytics/web/?authuser=5#/report/visitors-user-activity/a62914155w99339460p103300385/_u.date00=20191203&_u.date01=20200603&_r.userId=${userId}&_r.userListReportStates=%3F_u.date00=20191203%2526_u.date01=20200603&_r.userListReportId=visitors-legacy-user-id&activity-userActivityTable.activityTypeFilter=PAGEVIEW,GOAL,ECOMMERCE,EVENT&activity-userActivityTable.sorting=descending&activity-userActivityTable.rowShow=500&activity-userActivityTable.rowStart=${rowStart}/`;
     const elem = document.getElementById("galaxyIframe");
 
@@ -45,37 +48,77 @@
         const customerId = [
           ...elem.contentWindow.document.getElementsByClassName("_GAZeb"),
         ].map((e) => e.innerHTML);
+        // ページの表示が完了したか判断----
         if (customerId[0] === userId) {
+          const dates = new Set(
+            [
+              ...elem.contentWindow.document.getElementsByClassName("_GAOyb"),
+            ].map((e) => e.innerHTML)
+          );
+
+          // ページ遷移したい場合のページ表示完了判断
+          if (page >= 2) {
+            const intersection = new Set(
+              [...dates].filter((e) => preDates.has(e))
+            );
+            // ページ遷移が未完了　----
+            if (
+              dates.size === preDates.size &&
+              dates.size === intersection.size
+            ) {
+              console.log("...nowLoading (next page)");
+              return;
+            }
+          }
+
+          // データのパース ------------
           clearInterval(id);
           const sessionInfo = getSessionInfo(elem);
           const res = parseUserInfo(baseInfo, sessionInfo, userId);
           const SessionPerDate = getSessionPerDay(elem);
+          res.dailySessions = getDetail(SessionPerDate);
 
-          res.history = getDetail(SessionPerDate);
-          sessions.push(res);
+          // 結果を追加 ----------------
+          reports.push(res);
 
-          // ローカルストレージに保存
+          // ローカルストレージに保存 -----
           // 失敗したら処理を中断し、途中経過をダウンロードする。
           try {
-            localStorage.setItem("sessions", JSON.stringify(sessions));
+            localStorage.setItem("reports", JSON.stringify(reports));
           } catch (e) {
             console.error(
               "localStorageが一杯になりました。もう一度スタートしてください。途中から始まります。"
             );
             const link = document.createElement("a");
             link.href =
-              "data:text/plain," + encodeURIComponent(JSON.stringify(sessions));
+              "data:text/plain," + encodeURIComponent(JSON.stringify(reports));
             link.download = "sessions.json";
             link.click();
             localStorage.setItem("lastUser", userId);
-            localStorage.removeItem("sessions");
-            localStorage.setItem(
-              "sessions",
-              JSON.stringify(sessions.slice(-1))
-            );
+            localStorage.removeItem("reports");
+            localStorage.setItem("reports", JSON.stringify(reports.slice(-1)));
             return;
           }
-          getPage(userList[i], i + 1);
+          // 次のページに遷移 -----------
+          const pageInfo = [
+            ...elem.contentWindow.document.querySelectorAll("._GAfR > label"),
+          ][2].innerHTML;
+          const result = /^(\d+) - (\d+)\/(\d+)$/g.exec(pageInfo);
+          const [endRow, totalRow] = [result[2], result[3]];
+
+          // 条件1. 　最後のページ→次ユーザー
+          // 条件2.   最終ページでない→次ページに進む。
+          // console.log("endRow === totalRow", endRow === totalRow);
+          console.log("totalRow: ", endRow);
+          // _GAOyb
+
+          if (endRow === totalRow) {
+            console.log("Move on to Next User");
+            getPage(userList[i], i + 1);
+          } else {
+            console.log("Move on to Next page");
+            getPage(userList[i - 1], i, page + 1, dates);
+          }
         }
       }
     }, 2000);
@@ -84,14 +127,14 @@
   const parseUserInfo = (baseInfo, sessionInfo, userId) => {
     const res = {};
     res.clientId = userId;
-    res.BigQueryClientId = baseInfo[0];
+    res.bigQueryClientId = baseInfo[0];
     res.lastVisit = baseInfo[1];
     res.device = baseInfo[2];
     res.platform = baseInfo[3];
     res.firstVisit = baseInfo[4];
     res.channel = baseInfo[5];
     res.ref = baseInfo[6];
-    res.ltv = sessionInfo[0];
+    res.totalSessions = sessionInfo[0];
     res.sessionTime = sessionInfo[1];
     res.revenue = sessionInfo[2];
     res.transaction = sessionInfo[3];
@@ -143,36 +186,36 @@
   // 初期化 -------------------------------------------------
   // 途中から開始する場合は "isInitial = false" に設定する。
   let isInitial = true;
-  let sessions = localStorage.getItem("sessions");
+  let reports = localStorage.getItem("reports");
   let lastUser = localStorage.getItem("lastUser");
   // console.log("sessions", sessions);
   // console.log("userList", userList);
   if (isInitial) {
     // 最初から始める。
     console.log("initial");
-    sessions = [];
+    reports = [];
     localStorage.removeItem("lastUser");
   } else if (lastUser) {
     // ラストユーザーの後から始める。
     console.log("continue");
-    sessions = [];
+    reports = [];
     const idx = userList.indexOf(lastUser);
     userList = userList.slice(idx + 1);
   } else {
-    sessions = JSON.parse(sessions);
+    reports = JSON.parse(reports);
     console.log("through");
   }
   // console.log("lastUser", lastUser);
   // console.log("userList", userList);
 
   // 実行部 -------------------------------------------------
-  if (sessions.length > 0) {
+  if (reports.length > 0) {
     // 保存途中のセッションから始める。
-    const start = sessions.length - 1;
+    const start = reports.length - 1;
     getPage(userList[start], start + 1);
   } else {
     // 最初から始める。
-    userList = userList.slice(0, 1);
+    // userList = userList.slice(0, 1);
     getPage(userList[0], 1);
   }
 }
