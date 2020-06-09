@@ -8,7 +8,8 @@
     "default_icon": {
       "16": "sushi_akami.png"
     },
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "all_frames": true
   },
   "background": {
     "scripts": ["background.js"]

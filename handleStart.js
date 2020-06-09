@@ -34,7 +34,7 @@
     sleep(2000);
     // ページ遷移  --------------
     const rowStart = 500 * (page - 1);
-    window.location.href = `https://analytics.google.com/analytics/web/?authuser=5#/report/visitors-user-activity/a62914155w99339460p103300385/_u.date00=20191203&_u.date01=20200603&_r.userId=${userId}&_r.userListReportStates=%3F_u.date00=20191203%2526_u.date01=20200603&_r.userListReportId=visitors-legacy-user-id&activity-userActivityTable.activityTypeFilter=PAGEVIEW,GOAL,ECOMMERCE,EVENT&activity-userActivityTable.sorting=descending&activity-userActivityTable.rowShow=500&activity-userActivityTable.rowStart=${rowStart}/`;
+    window.location.href = `https://analytics.google.com/analytics/web/?authuser=1#/report/visitors-user-activity/a62914155w99339460p103300385/_u.date00=20191208&_u.date01=20200608&_r.userId=${userId}&_r.userListReportStates=%3F_u.date00=20191208%2526_u.date01=20200608&_r.userListReportId=visitors-legacy-user-id&activity-userActivityTable.activityTypeFilter=PAGEVIEW,GOAL,ECOMMERCE,EVENT&activity-userActivityTable.sorting=descending&activity-userActivityTable.rowShow=500&activity-userActivityTable.rowStart=${rowStart}/`;
     const elem = document.getElementById("galaxyIframe");
 
     let id = setInterval(() => {
@@ -208,6 +208,7 @@
   // console.log("lastUser", lastUser);
   // console.log("userList", userList);
 
+  console.log("userList", userList);
   // 実行部 -------------------------------------------------
   if (reports.length > 0) {
     // 保存途中のセッションから始める。
