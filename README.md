@@ -1,1 +1,2 @@
 # ga_data_fetch
+Google Analyticsのユーザーエクスプローラーからデータを取得するクローム拡張
