@@ -174,10 +174,10 @@
 
       return {
         date: elem.getElementsByClassName("_GAOyb")[0].innerHTML,
+        channel: elem.getElementsByClassName("_GArR")[0].innerHTML,
         // セッション別
-        session: [...elem.getElementsByClassName("_GAGf")].map(
+        sessions: [...elem.getElementsByClassName("_GAGf")].map(
           (sessionElem) => {
-            // console.log("sessionElem", sessionElem);
             return {
               sessionTime: sessionElem.getElementsByClassName("_GAMI")[0]
                 .innerHTML,
