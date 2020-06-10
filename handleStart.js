@@ -74,9 +74,14 @@
           // データのパース ------------
           clearInterval(id);
           const sessionInfo = getSessionInfo(elem);
-          const res = parseUserInfo(baseInfo, sessionInfo, userId);
-          const SessionPerDate = getSessionPerDay(elem);
-          res.dailySessions = getDetail(SessionPerDate);
+          let res = parseUserInfo(baseInfo, sessionInfo, userId);
+          const SessionPerDate = getSessionPerDate(elem);
+          res.dailySessions = getSessions(SessionPerDate);
+          const customDimension = getCustomDimension(elem);
+          Object.assign(res, customDimension);
+
+          console.log("res", res);
+          // return;
 
           // 結果を追加 ----------------
           reports.push(res);
@@ -138,6 +143,10 @@
     res.sessionTime = sessionInfo[1];
     res.revenue = sessionInfo[2];
     res.transaction = sessionInfo[3];
+    res.complete = sessionInfo[4];
+    res.objective = sessionInfo[5];
+    res.registration = sessionInfo[6];
+    res.registrationValue = sessionInfo[7];
     return res;
   };
 
@@ -149,7 +158,7 @@
   };
 
   // スクレイピング
-  const getSessionPerDay = (elem) => {
+  const getSessionPerDate = (elem) => {
     // 日別のセッションを取得する。
     const SessionPerDate = [
       ...elem.contentWindow.document.getElementsByClassName("_GAvi"),
@@ -157,30 +166,100 @@
     return SessionPerDate;
   };
 
-  const getDetail = (SessionPerDate) => {
-    const detail = SessionPerDate.map((elem) => {
+  const getSessions = (SessionPerDates) => {
+    // SessionPerDate: HTML要素のリスト
+    // 日別のセッション取得
+    const sessions = SessionPerDates.map((elem) => {
+      console.log("elem", elem);
+
       return {
         date: elem.getElementsByClassName("_GAOyb")[0].innerHTML,
-        session: [
-          ...elem.getElementsByClassName(
-            "C_USER_ACTIVITY_TABLE_ACTIVITY_SECTION_HEADER_TEXT_CONTAINER"
-          ),
-        ].map((elem) => {
-          return {
-            time: elem.getElementsByClassName("_GAj3b")[0].innerHTML,
-            activity: elem
-              .getElementsByClassName(
-                "C_USER_ACTIVITY_TABLE_ACTIVITY_SECTION_HEADER_DESC"
-              )[0]
-              .childNodes[0].innerHTML.replace(
-                /<("[^"]*"|'[^']*'|[^'">])*>/g,
-                ""
+        // セッション別
+        session: [...elem.getElementsByClassName("_GAGf")].map(
+          (sessionElem) => {
+            // console.log("sessionElem", sessionElem);
+            return {
+              sessionTime: sessionElem.getElementsByClassName("_GAMI")[0]
+                .innerHTML,
+              duration: sessionElem.getElementsByClassName("_GARE")[0]
+                .innerHTML,
+              activities: [...sessionElem.getElementsByClassName("_GAej")].map(
+                (activityElem) => {
+                  const eventType = checkEventType(
+                    activityElem.getElementsByClassName("_GAFg")[0]
+                  );
+
+                  return {
+                    time: activityElem.getElementsByClassName("_GAj3b")[0]
+                      .innerHTML,
+                    activityType: eventType,
+                    activity: activityElem
+                      .getElementsByClassName(
+                        "C_USER_ACTIVITY_TABLE_ACTIVITY_SECTION_HEADER_DESC"
+                      )[0]
+                      .childNodes[0].innerHTML.replace(
+                        /<("[^"]*"|'[^']*'|[^'">])*>/g,
+                        ""
+                      ),
+                    detail: getDetail(activityElem),
+                  };
+                }
               ),
-          };
-        }),
+            };
+          }
+        ),
       };
     });
-    return detail;
+    return sessions;
+  };
+
+  const getDetail = (elem) => {
+    const detailElem = elem.getElementsByClassName("_GARib")[0];
+    const info = [...detailElem.getElementsByClassName("_GAsxb")].map(
+      (infoElem) => {
+        const key = infoElem.getElementsByClassName("_GASIb")[0].innerHTML;
+        const values = [
+          ...infoElem.getElementsByClassName(
+            "C_USER_ACTIVITY_TABLE_ACTIVITY_DETAIL_ITEM_VALUE"
+          ),
+        ].map((e) => e.innerHTML);
+        return [key, values.length === 1 ? values[0] : values];
+      }
+    );
+    return info;
+  };
+
+  const checkEventType = (elem) => {
+    // elem: EventTypeのdom要素
+    if (elem.classList.contains("_GALr")) {
+      return "e-commerce";
+    } else if (elem.classList.contains("_GAEo")) {
+      return "page view";
+    } else if (elem.classList.contains("_GApn")) {
+      return "event";
+    } else if (elem.classList.contains("_GAqG")) {
+      return "revenue";
+    } else {
+      return "not set";
+    }
+  };
+
+  const getCustomDimension = (elem) => {
+    // C_USER_ACTIVITY_PROFILE_CUSTOM_DIMENSION_CONTENT_TEXT
+    const customDimensionKeys = [
+      ...elem.contentWindow.document.getElementsByClassName("_GAlH"),
+    ].map((e) => e.innerHTML);
+    const customDimensionValues = [
+      ...elem.contentWindow.document.getElementsByClassName(
+        "C_USER_ACTIVITY_PROFILE_CUSTOM_DIMENSION_CONTENT_TEXT"
+      ),
+    ].map((e) => e.innerHTML);
+
+    res = {};
+    for (let i = 0; i < customDimensionKeys.length; i++) {
+      res[customDimensionKeys[i]] = customDimensionValues[i];
+    }
+    return res;
   };
 
   // 初期化 -------------------------------------------------
@@ -216,7 +295,7 @@
     getPage(userList[start], start + 1);
   } else {
     // 最初から始める。
-    // userList = userList.slice(0, 1);
+    userList = userList.slice(0, 1);
     getPage(userList[0], 1);
   }
 }
