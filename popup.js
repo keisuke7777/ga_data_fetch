@@ -25,7 +25,7 @@
       let userList = JSON.parse(item.userList);
       chrome.tabs.executeScript(
         {
-          code: "let userList =" + JSON.stringify(userList),
+          code: "userList =" + JSON.stringify(userList),
         },
         () => {
           chrome.tabs.executeScript({

@@ -22,19 +22,24 @@
         console.log("保存済みです");
         return;
       }
-      localStorage.setItem("lastUser", lastUser);
+      // localStorage.setItem("lastUser", lastUser);
+      const savedUsers = new Set(reports.map((user) => user.clientId));
+      console.log("saved users:", savedUsers.size);
       // console.log("lastUser", lastUser);
       const link = document.createElement("a");
       link.href =
         "data:text/plain," + encodeURIComponent(JSON.stringify(reports));
       link.download = "reports.json";
       link.click();
+      // キャッシュを消すためのスーパーリロード
+      // window.location.reload(true);
       return;
     }
     sleep(2000);
     // ページ遷移  --------------
     const rowStart = 500 * (page - 1);
-    window.location.href = `https://analytics.google.com/analytics/web/?authuser=1#/report/visitors-user-activity/a62914155w99339460p103300385/_u.date00=20191208&_u.date01=20200608&_r.userId=${userId}&_r.userListReportStates=%3F_u.date00=20191208%2526_u.date01=20200608&_r.userListReportId=visitors-legacy-user-id&activity-userActivityTable.activityTypeFilter=PAGEVIEW,GOAL,ECOMMERCE,EVENT&activity-userActivityTable.sorting=descending&activity-userActivityTable.rowShow=500&activity-userActivityTable.rowStart=${rowStart}/`;
+    // TODO: 日付は自動で取得したい。
+    window.location.href = `https://analytics.google.com/analytics/web/?authuser=0#/report/visitors-user-activity/a62914155w99339460p103300385/_u.date00=20191210&_u.date01=20200610&_r.userId=${userId}&_r.userListReportStates=%3F_u.date00=20191210%2526_u.date01=20200610%2526explorer-table-dataTable.sortColumnName=analytics.transactions%2526explorer-table-dataTable.sortDescending=true%2526explorer-table.plotKeys=%5B%5D%2526explorer-table.rowStart=9%2526explorer-table.rowCount=10&_r.userListReportId=visitors-legacy-user-id&activity-userActivityTable.activityTypeFilter=PAGEVIEW,GOAL,ECOMMERCE,EVENT&activity-userActivityTable.sorting=descending&activity-userActivityTable.rowShow=500&activity-userActivityTable.rowStart=${rowStart}/`;
     const elem = document.getElementById("galaxyIframe");
 
     let id = setInterval(() => {
@@ -71,8 +76,10 @@
             }
           }
 
-          // データのパース ------------
+          // InterValの停止 -----
           clearInterval(id);
+
+          // データのパース ------------
           const sessionInfo = getSessionInfo(elem);
           let res = parseUserInfo(baseInfo, sessionInfo, userId);
           const SessionPerDate = getSessionPerDate(elem);
@@ -80,49 +87,57 @@
           const customDimension = getCustomDimension(elem);
           Object.assign(res, customDimension);
 
-          console.log("res", res);
-          // return;
+          // 半年より前の集客の場合はスキップ -------
+          // const firstVisit = /^(\d+)月 (\d+), (\d+)$/g.exec(res.firstVisit);
+          // const firstVisitDate = new Date(
+          //   firstVisit[3] + "/" + firstVisit[1] + "/" + firstVisit[2]
+          // );
+          // from = new Date();
+          // from.setMonth(from.getMonth() - 6);
+          // if (firstVisitDate.getTime() < from.getTime()) {
+          //   console.log("This user is not in range");
+          //   console.log("Move on to Next User");
+          //   getPage(userList[i], i + 1);
+          //   return;
+          // }
 
           // 結果を追加 ----------------
           reports.push(res);
 
           // ローカルストレージに保存 -----
           // 失敗したら処理を中断し、途中経過をダウンロードする。
-          try {
-            localStorage.setItem("reports", JSON.stringify(reports));
-          } catch (e) {
-            console.error(
-              "localStorageが一杯になりました。もう一度スタートしてください。途中から始まります。"
-            );
-            const link = document.createElement("a");
-            link.href =
-              "data:text/plain," + encodeURIComponent(JSON.stringify(reports));
-            link.download = "sessions.json";
-            link.click();
-            localStorage.setItem("lastUser", userId);
-            localStorage.removeItem("reports");
-            localStorage.setItem("reports", JSON.stringify(reports.slice(-1)));
-            return;
-          }
+          // try {
+          //   localStorage.setItem("reports", JSON.stringify(reports));
+          // } catch (e) {
+          //   console.error(
+          //     "localStorageが一杯になりました。もう一度スタートしてください。途中から始まります。"
+          //   );
+          //   const link = document.createElement("a");
+          //   link.href =
+          //     "data:text/plain," + encodeURIComponent(JSON.stringify(reports));
+          //   link.download = "sessions.json";
+          //   link.click();
+          //   localStorage.setItem("lastUser", userId);
+          //   localStorage.removeItem("reports");
+          //   localStorage.setItem("reports", JSON.stringify(reports.slice(-1)));
+          //   return;
+          // }
           // 次のページに遷移 -----------
           const pageInfo = [
             ...elem.contentWindow.document.querySelectorAll("._GAfR > label"),
           ][2].innerHTML;
           const result = /^(\d+) - (\d+)\/(\d+)$/g.exec(pageInfo);
           const [endRow, totalRow] = [result[2], result[3]];
-
-          // 条件1. 　最後のページ→次ユーザー
-          // 条件2.   最終ページでない→次ページに進む。
-          // console.log("endRow === totalRow", endRow === totalRow);
-          console.log("totalRow: ", endRow);
-          // _GAOyb
+          console.log(`nowRow/totalRow: ${endRow}/${totalRow}`);
 
           if (endRow === totalRow) {
             console.log("Move on to Next User");
             getPage(userList[i], i + 1);
+            return;
           } else {
             console.log("Move on to Next page");
             getPage(userList[i - 1], i, page + 1, dates);
+            return;
           }
         }
       }
@@ -157,7 +172,7 @@
     return info;
   };
 
-  // スクレイピング
+  // スクレイピング ---------
   const getSessionPerDate = (elem) => {
     // 日別のセッションを取得する。
     const SessionPerDate = [
@@ -170,7 +185,7 @@
     // SessionPerDate: HTML要素のリスト
     // 日別のセッション取得
     const sessions = SessionPerDates.map((elem) => {
-      console.log("elem", elem);
+      // console.log("elem", elem);
 
       return {
         date: elem.getElementsByClassName("_GAOyb")[0].innerHTML,
@@ -226,7 +241,13 @@
         return [key, values.length === 1 ? values[0] : values];
       }
     );
-    return info;
+
+    res = {};
+    for (let i = 0; i < info.length; i++) {
+      res[info[i][0]] = info[i][1];
+    }
+
+    return res;
   };
 
   const checkEventType = (elem) => {
@@ -239,6 +260,8 @@
       return "event";
     } else if (elem.classList.contains("_GAqG")) {
       return "revenue";
+    } else if (elem.classList.contains("_GAct")) {
+      return "objective";
     } else {
       return "not set";
     }
@@ -248,7 +271,7 @@
     // C_USER_ACTIVITY_PROFILE_CUSTOM_DIMENSION_CONTENT_TEXT
     const customDimensionKeys = [
       ...elem.contentWindow.document.getElementsByClassName("_GAlH"),
-    ].map((e) => e.innerHTML);
+    ].map((e) => e.innerHTML.replace("AA_", ""));
     const customDimensionValues = [
       ...elem.contentWindow.document.getElementsByClassName(
         "C_USER_ACTIVITY_PROFILE_CUSTOM_DIMENSION_CONTENT_TEXT"
@@ -274,6 +297,7 @@
     console.log("initial");
     reports = [];
     localStorage.removeItem("lastUser");
+    localStorage.removeItem("reports");
   } else if (lastUser) {
     // ラストユーザーの後から始める。
     console.log("continue");
@@ -295,7 +319,7 @@
     getPage(userList[start], start + 1);
   } else {
     // 最初から始める。
-    userList = userList.slice(0, 1);
+    // userList = userList.slice(5, 10);
     getPage(userList[0], 1);
   }
 }
