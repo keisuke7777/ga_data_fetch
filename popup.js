@@ -8,17 +8,20 @@
   });
 
   document.getElementById("getUserList").addEventListener("click", function () {
-    chrome.tabs.executeScript(
-      {
-        file: "getUserList.js",
-      },
-      (res) => {
-        const userList = res[0];
-        document.getElementById("all_data").innerHTML = userList.length;
-        chrome.storage.sync.set({ userList: JSON.stringify(userList) });
-      }
-    );
+    document.getElementById("all_data").innerHTML = localStorage.getItem("foo");
   });
+
+  // chrome.tabs.executeScript(
+  //   {
+  //     file: "getUserList.js",
+  //   },
+  //   (res) => {
+  //     const userList = res[0];
+  //     document.getElementById("all_data").innerHTML = userList.length;
+  //     chrome.storage.sync.set({ userList: JSON.stringify(userList) });
+  //   }
+  // );
+  // });
 
   document.getElementById("start").addEventListener("click", function () {
     chrome.storage.sync.get({ userList: [] }, (item) => {

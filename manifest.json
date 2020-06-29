@@ -15,5 +15,14 @@
     "scripts": ["background.js"]
   },
 
+  "content_scripts": [
+    {
+      "run_at": "document_idle",
+      "matches": ["https://analytics.google.com/analytics/*"],
+      "js": ["js/random.js", "js/getData.js", "js/save.js", "js/chooseData.js"],
+      "css": ["content.css"]
+    }
+  ],
+
   "permissions": ["activeTab", "background", "storage", "unlimitedStorage"]
 }

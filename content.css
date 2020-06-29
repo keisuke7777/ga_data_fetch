@@ -1,0 +1,29 @@
+.float {
+  position: absolute;
+  z-index: 100;
+  background-color: #e8f0fe;
+  height: 50px;
+  width: 50px;
+  border-radius: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 2em;
+  cursor: pointer;
+}
+
+.random {
+  right: 30px;
+  bottom: 30px;
+}
+
+.start {
+  right: 90px;
+  bottom: 30px;
+}
+
+.disable {
+  pointer-events: none;
+  background-color: hotpink;
+}
